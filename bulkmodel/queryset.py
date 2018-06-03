@@ -22,7 +22,12 @@ import collections
 class BulkModelQuerySet(models.QuerySet):
 
     def _get_n_concurrent_workers(self, n, default=30):
-        return n or getattr(settings, 'MAX_CONCURRENT_BATCH_WRITES', default)
+        _max = getattr(settings, 'MAX_CONCURRENT_BATCH_WRITES', default)
+
+        if _max:
+            return max(n, _max)
+
+        return n
 
 
     def _get_concurrent(self, flag, default=False):
@@ -71,7 +76,7 @@ class BulkModelQuerySet(models.QuerySet):
     def update(self, batch_size=None, concurrent=False, max_concurrent_workers=None,
                send_signals=True, _use_super=False, return_queryset=False, **kwargs):
         """
-        Performs a homogenous update of data.
+        Performs a homogeneous update of data.
 
         :param batch_size:
         :param concurrent:
@@ -192,15 +197,6 @@ class BulkModelQuerySet(models.QuerySet):
                 n += result
 
 
-        if send_signal:
-            post_update_fields.send(
-                self.model,
-                instances = self,
-                field_names = fieldnames,
-                batch_size = batch_size,
-                n = n
-            )
-
         if return_queryset:
             _ids = []
             for obj in self:
@@ -208,7 +204,23 @@ class BulkModelQuerySet(models.QuerySet):
                 if _id is not None:
                     _ids.append(_id)
 
-            return self.filter(id__in = _ids)
+            qs = self.filter(id__in = _ids)
+        else:
+            qs = self.none()
+
+
+        if send_signal:
+            post_update_fields.send(
+                self.model,
+                instances = self,
+                queryset = qs,
+                field_names = fieldnames,
+                batch_size = batch_size,
+                n = n
+            )
+
+        if return_queryset:
+            return qs
 
         return n
 

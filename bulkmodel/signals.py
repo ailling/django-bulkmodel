@@ -6,7 +6,7 @@ pre_bulk_create = ModelSignal(providing_args=['instances'])
 post_bulk_create = ModelSignal(providing_args=['instances'])
 
 
-# These signals are sent when a model is updated homogenously (i.e.: queryset.update(field=value)
+# These signals are sent when a model is updated homogeneously (i.e.: queryset.update(field=value)
 pre_update = ModelSignal(providing_args=['instances'])
 post_update = ModelSignal(providing_args=['instances'])
 
@@ -21,6 +21,7 @@ pre_update_fields = ModelSignal(providing_args=[
 
 post_update_fields = ModelSignal(providing_args=[
     'instances',
+    'queryset',
     'field_names',
     'field_defaults',
     'batch_size',

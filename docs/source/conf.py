@@ -102,6 +102,12 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
+html_context = {
+  'display_github': True,
+  'github_user': 'ailling',
+  'github_repo': 'django-bulkmodel',
+  'github_version': 'master'
+}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

@@ -69,3 +69,19 @@ With this route you'll need to point your ``objects`` reference on each ``BulkMo
 
         objects = BulkModelManager()
 
+
+-------
+
+
+Optional Settings
+-------------------
+
+Place the following in your ``settings.py`` to set global behavior of your bulkmodels:
+
+- ``MAX_CONCURRENT_BATCH_WRITES``
+When set, this is the maximum number of concurrent workers that will be available to any concurrent write across your entire project.
+The default leaves this value unset.
+
+- ``ALWAYS_USE_CONCURRENT_BATCH_WRITES``
+If True, django-bulkmodel will always use concurrent writes. The default is False.
+

@@ -16,7 +16,7 @@ setup(
     description='Adds missing features to Django ORM for working with data in bulk operations',
     long_description=README,
     long_description_content_type="text/markdown",
-    url='https://www.example.com/',
+    url='https://github.com/ailling/django-bulkmodel',
     author='Alan Illing',
     author_email='alanilling@protonmail.com',
     keywords = ['django', 'orm', 'database', 'bulk', 'data'],

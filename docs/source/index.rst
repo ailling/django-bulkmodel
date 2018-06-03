@@ -1,7 +1,7 @@
 Django Bulkmodel
 =====================================
 
-This projects adds a number of features missing from Django's ORM. It enables heterogenous updates,
+This projects adds a number of features missing from Django's ORM. It enables heterogeneous updates,
 concurrent writes, retrieving records after bulk-creating them, and offline connection management to name a few
 features it provides.
 
@@ -51,9 +51,9 @@ Some things you can do:
     foos = Foo.objects.bulk_create(ls, return_queryset=True)
 
 
-**Heterogenously update data**
+**Heterogeneously update data**
 
-The ``.update()`` method on a queryset performs a *homogenous* update. That is, one or more columns for
+The ``.update()`` method on a queryset performs a *homogeneous* update. That is, one or more columns for
 all the records in the queryset are updated to the same value.
 
 Django-bulkmodel lets you set different values for different primary keys, with a simple and intuitive API,
@@ -86,10 +86,10 @@ inserting concurrently. With django-bulkmodel you simply turn on the ``concurren
     # concurrently write foos into the database
     Foo.objects.bulk_create(foos, concurrent=True, batch_size=1000, max_concurrent_workers=10)
 
-    # a regular (homogenous) update can be written concurrently
+    # a regular (homogeneous) update can be written concurrently
     foos.update(concurrent=True, batch_size=1000, max_concurrent_workers=10)
 
-    # and so can a heterogenous update
+    # and so can a heterogeneous update
     foos.update_fields(concurrent=True, batch_size=1000, max_concurrent_workers=10)
 
 
@@ -102,7 +102,8 @@ inserting concurrently. With django-bulkmodel you simply turn on the ``concurren
    :numbered:
    :caption: In-Depth Guides
 
-   pages/updates
+   pages/bulk-create
+   pages/bulk-update
    pages/concurrent-writes
    pages/connection-management
    pages/copy-to-from
