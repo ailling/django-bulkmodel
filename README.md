@@ -125,6 +125,53 @@ copying data to and from the database via in-memory buffers, and queryset chunki
 
 ---
 
+## Installation
+
+First make sure you have django >= 1.9 installed. It's always
+recommended to update to the latest version of Django.
+
+For concurrency features to work you'll need Python 3.4+ and access to asyncio
+
+Then install the package from pypi:
+
+    pip install django-bulkmodel
+
+Add `bulkmodel` to your `INSTALLED_APPS`:
+
+    INSTALLED_APPS = [
+        ...
+        'bulkmodel',
+    ]
+
+
+Inherit your existing models from `BulkModel`, or create new models to inherit
+from this class:
+
+    from django.db import models
+    from bulkmodel.models import BulkModel
+
+    class MyModel(BulkModel):
+        ...
+
+
+Make migrations:
+
+    ./manage.py makemigrations <name-of-your-app> # for new apps
+    ./manage.py makemigrations # for existing apps with migrations
+
+And apply them:
+
+    ./manage.py migrate
+
+
+You can also do a partial installation if you don't want to migrate all your models.
+
+For more instructions [read the full installation instructions documentation](https://django-bulkmodel.readthedocs.io/en/latest/pages/installation.html)
+
+
+
+---
+
 ## Full documentation
 
 [Read the full documentation](https://django-bulkmodel.readthedocs.io/)
