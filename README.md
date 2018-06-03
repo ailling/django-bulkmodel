@@ -2,7 +2,7 @@
 
 BulkModel adds additional features that makes it easier to interact with data in bulk.
 
-Below is a brief summary of the project. Read the [full documentation](https://django-bulkmodel.readthedocs.io/)
+Below is a brief summary of the project. **Read the [full documentation](https://django-bulkmodel.readthedocs.io/)**
 
 ---
 
