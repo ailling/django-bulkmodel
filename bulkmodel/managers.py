@@ -21,6 +21,16 @@ class BulkModelManager(models.Manager):
 
 
     def create_queryset(self, objects):
+        """
+        Builds a queryset from a set of objects.
+        For objects with a property called "id" or "pk" will be fetching from the database
+        and populated with provided values.
+
+        Objects missing these propertie will be created in bulk and re-fetched from the database
+
+        :param collections.Iterable objects:
+        :return:
+        """
         if not isinstance(objects, collections.Iterable):
             return None
 
@@ -43,11 +53,23 @@ class BulkModelManager(models.Manager):
             new_records = self.model.bulk_create(new_instances)
             _ids.extend([i.id for i in new_records])
 
-        return self.model.objects.filter(id__in = _ids)
+        qs = self.model.objects.filter(id__in = _ids)
+
+        if existing_instances:
+            qs = qs.update_fields(existing_instances, return_queryset=True)
+
+        return qs
 
 
-    def populate_values(self, objects):
-        return self.get_queryset().populate_values(objects)
+    def populate_values(self, objects, *fieldnames):
+        """
+        Sets values on objects in the existing queryset from a given set of objects and optional set of fieldnames
+
+        :param collections.Iterable objects: a list of objects with data to use as a source for updates to apply within the queryset
+        :param List[str] fieldnames: a list of field names to apply updates to. If blank all fields will be updated
+        :return:
+        """
+        return self.get_queryset().populate_values(objects, *fieldnames)
 
 
 
@@ -83,17 +105,46 @@ class BulkModelManager(models.Manager):
 
     # region wrappers so that it's easier for IDEs to pick up these queryset methods
 
-    def update_fields(self, *fields, batch_size=None, send_signal=True,
-                      concurrent=False, max_concurrent_workers=None):
+    def update_fields(self, *fieldnames, objects=None, batch_size=None, send_signal=True,
+                      concurrent=False, max_concurrent_workers=None, return_queryset=False):
+        """
+        Performs a hetergeneous update
 
+        :param fieldnames:
+        :param objects:
+        :param batch_size:
+        :param send_signal:
+        :param concurrent:
+        :param max_concurrent_workers:
+        :return:
+        """
         return self.get_queryset().update_fields(
-            *fields, batch_size=batch_size, send_signal=send_signal,
-            concurrent=concurrent, max_concurrent_workers=max_concurrent_workers
+            *fieldnames, objects = objects, send_signal=send_signal,
+            concurrent=concurrent, max_concurrent_workers=max_concurrent_workers,
+            return_queryset = return_queryset
         )
 
 
-    def bulk_create(self, *args, **kwargs):
-        return self.get_queryset().bulk_create(*args, **kwargs)
+    def bulk_create(self, objs, bm_create_uuid=None, batch_size=None, send_signal=True,
+                    concurrent=False, max_concurrent_workers=None,
+                    return_queryset=False):
+        """
+        A signal-enabled override of django's bulk_create
+
+        :param objs:
+        :param UUID bm_create_uuid: a uuid to use as the bm_create_uuid in the model
+        :param batch_size:
+        :param bool send_signal:
+        :param bool concurrent:
+        :param bool max_concurrent_workers:
+        :param bool return_queryset: whether to return instances; if false, returns the default from django's method
+        :return:
+        """
+        return self.get_queryset().bulk_create(
+            objs, bm_create_uuid=bm_create_uuid, batch_size=batch_size, send_signal=send_signal,
+            concurrent=concurrent, max_concurrent_workers=max_concurrent_workers,
+            return_queryset=return_queryset
+        )
 
     # endregion
 
@@ -137,6 +188,28 @@ class BulkModelManager(models.Manager):
 
 
 
-    def copy_from_objects(self, *args, **kwargs):
-        return self.get_queryset().copy_from_objects(*args, **kwargs)
+    def copy_from_objects(self, objs, bm_create_uuid=None, exclude_id=True, signal=True,
+                          concurrent=False, max_concurrent_workers=None,
+                          fieldnames=None, batch_size=None,
+                          return_queryset=False):
+        """
+        Updates data in the databse using the COPY FROM operaiton, if supported by the database being used
+
+        :param objs:
+        :param bm_create_uuid:
+        :param exclude_id:
+        :param signal:
+        :param concurrent:
+        :param max_concurrent_workers:
+        :param fieldnames:
+        :param batch_size:
+        :param return_queryset:
+        :return:
+        """
+        return self.get_queryset().copy_from_objects(
+            objs, bm_create_uuid=bm_create_uuid, exclude_id=exclude_id, signal=signal,
+            concurrent=concurrent, max_concurrent_workers=max_concurrent_workers,
+            fieldnames=fieldnames, batch_size=batch_size,
+            return_queryset=return_queryset
+        )
 

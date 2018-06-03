@@ -69,7 +69,7 @@ class BulkModelQuerySet(models.QuerySet):
 
 
     def update(self, batch_size=None, concurrent=False, max_concurrent_workers=None,
-               send_signals=True, _use_super=False, **kwargs):
+               send_signals=True, _use_super=False, return_queryset=False, **kwargs):
         """
         Performs a homogenous update of data.
 
@@ -78,7 +78,7 @@ class BulkModelQuerySet(models.QuerySet):
         :param max_concurrent_workers:
         :param send_signals:
         :param _use_super:
-        :param kwargs:
+        :param return_queryset:
         :return:
         """
         if _use_super:
@@ -112,6 +112,15 @@ class BulkModelQuerySet(models.QuerySet):
         if send_signals:
             post_update.send(sender = self.model, instances = self)
 
+        if return_queryset:
+            _ids = []
+            for obj in self:
+                _id = getattr(obj, 'id') or getattr(obj, 'pk')
+                if _id:
+                    _ids.append(_id)
+
+            return self.filter(id__in = _ids)
+
         return n
 
 
@@ -123,7 +132,7 @@ class BulkModelQuerySet(models.QuerySet):
 
 
     def update_fields(self, *fieldnames, objects=None, batch_size=None, send_signal=True,
-                      concurrent=False, max_concurrent_workers=None):
+                      concurrent=False, max_concurrent_workers=None, return_queryset=False):
         """
         Performs a hetergeneous update
 
@@ -133,6 +142,7 @@ class BulkModelQuerySet(models.QuerySet):
         :param send_signal:
         :param concurrent:
         :param max_concurrent_workers:
+        :param return_queryset:
         :return:
         """
         if not fieldnames:
@@ -191,6 +201,15 @@ class BulkModelQuerySet(models.QuerySet):
                 n = n
             )
 
+        if return_queryset:
+            _ids = []
+            for obj in self:
+                _id = getattr(obj, 'id') or getattr(obj, 'pk')
+                if _id is not None:
+                    _ids.append(_id)
+
+            return self.filter(id__in = _ids)
+
         return n
 
 
@@ -200,7 +219,7 @@ class BulkModelQuerySet(models.QuerySet):
         Splits the queryset results into chunks
 
         WARNING this method is destructive: it returns a list of lists,
-        not a queryset. The queryset object will be completely lost
+        not a queryset. The queryset object will be lost
 
         :param chunk_size:
         :param max_chunks:
@@ -270,30 +289,30 @@ class BulkModelQuerySet(models.QuerySet):
         return result
 
 
-    def _attach_create_uuids(self, objs, create_uuid):
-        if create_uuid is None:
-            create_uuid = uuid.uuid4()
-        elif isinstance(create_uuid, str):
-            create_uuid = uuid.UUID(create_uuid)
+    def _attach_bm_create_uuids(self, objs, bm_create_uuid):
+        if bm_create_uuid is None:
+            bm_create_uuid = uuid.uuid4()
+        elif isinstance(bm_create_uuid, str):
+            bm_create_uuid = uuid.UUID(bm_create_uuid)
 
         attached = set()
         for obj in objs:
-            if not getattr(obj, 'create_uuid'):
-                setattr(obj, 'create_uuid', create_uuid)
-            attached.add(getattr(obj, 'create_uuid'))
+            if not getattr(obj, 'bm_create_uuid'):
+                setattr(obj, 'bm_create_uuid', bm_create_uuid)
+            attached.add(getattr(obj, 'bm_create_uuid'))
 
         return attached
 
 
 
-    def bulk_create(self, objs, create_uuid=None, batch_size=None, send_signal=True,
+    def bulk_create(self, objs, bm_create_uuid=None, batch_size=None, send_signal=True,
                     concurrent=False, max_concurrent_workers=None,
-                    return_queryset=False):
+                    return_queryset=False, **kwargs):
         """
         A signal-enabled override of django's bulk_create
 
         :param objs:
-        :param UUID create_uuid: a uuid to use as the create_uuid in the model
+        :param UUID bm_create_uuid: a uuid to use as the bm_create_uuid in the model
         :param batch_size:
         :param bool send_signal:
         :param bool concurrent:
@@ -301,9 +320,9 @@ class BulkModelQuerySet(models.QuerySet):
         :param bool return_queryset: whether to return instances; if false, returns the default from django's method
         :return:
         """
-        is_bulkmodel = hasattr(self.model, 'create_uuid')
+        is_bulkmodel = hasattr(self.model, 'bm_create_uuid')
         if is_bulkmodel:
-            uuids = self._attach_create_uuids(objs, create_uuid)
+            uuids = self._attach_bm_create_uuids(objs, bm_create_uuid)
         else:
             uuids = set()
 
@@ -325,7 +344,7 @@ class BulkModelQuerySet(models.QuerySet):
             result = super().bulk_create(objs, batch_size=batch_size)
 
         if is_bulkmodel and return_queryset:
-            qs = self.filter(create_uuid__in = uuids)
+            qs = self.filter(bm_create_uuid__in = uuids)
         else:
             qs = self.none()
 
@@ -375,7 +394,7 @@ class BulkModelQuerySet(models.QuerySet):
 
 
 
-    def copy_from_objects(self, objs, create_uuid=None, exclude_id=True, signal=True,
+    def copy_from_objects(self, objs, bm_create_uuid=None, exclude_id=True, signal=True,
                             concurrent=False, max_concurrent_workers=None,
                             fieldnames=None, batch_size=None,
                             return_queryset=False):
@@ -383,7 +402,7 @@ class BulkModelQuerySet(models.QuerySet):
         Updates data in the databse using the COPY FROM operaiton, if supported by the database being used
 
         :param objs:
-        :param create_uuid:
+        :param bm_create_uuid:
         :param exclude_id:
         :param signal:
         :param concurrent:
@@ -395,9 +414,9 @@ class BulkModelQuerySet(models.QuerySet):
         """
         from .helpers import get_chunks
 
-        is_bulkmodel = hasattr(self.model, 'create_uuid')
+        is_bulkmodel = hasattr(self.model, 'bm_create_uuid')
         if is_bulkmodel:
-            uuids = self._attach_create_uuids(objs, create_uuid)
+            uuids = self._attach_bm_create_uuids(objs, bm_create_uuid)
         else:
             uuids = set()
 
@@ -432,7 +451,7 @@ class BulkModelQuerySet(models.QuerySet):
 
 
         if is_bulkmodel and return_queryset:
-            qs = self.filter(create_uuid__in = uuids)
+            qs = self.filter(bm_create_uuid__in = uuids)
         else:
             qs = self.none()
 

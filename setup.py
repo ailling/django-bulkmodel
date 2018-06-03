@@ -13,22 +13,24 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     license='BSD License',  # example license
-    description='Makes it easier to work with bulk data in Django',
+    description='Adds missing features to Django ORM for working with data in bulk operations',
     long_description=README,
     url='https://www.example.com/',
     author='Alan Illing',
-    author_email='alan.illing@gmail.com',
+    author_email='',
+    keywords = ['django', 'orm', 'database', 'bulk', 'data'],
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
-        'Framework :: Django :: 1.11',  # replace "X.Y" as appropriate
+        'Framework :: Django :: 1.11',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',  # example license
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Database',
+        'Topic :: Database :: Front-Ends'
     ],
 )

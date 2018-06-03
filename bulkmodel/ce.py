@@ -39,6 +39,11 @@ class ConcurrentExecutor(object):
 
 
     def run_async(self):
+        """
+        Run jobs asynchronously
+
+        :return:
+        """
         ioloop = asyncio.new_event_loop()
         ioloop.run_until_complete(self._asynchronous())
         ioloop.close()
