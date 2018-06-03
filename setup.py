@@ -1,7 +1,7 @@
 import os
 from setuptools import find_packages, setup
 
-with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
+with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
     README = readme.read()
 
 # allow setup.py to be run from any path
@@ -15,6 +15,7 @@ setup(
     license='Apache Software License',
     description='Adds missing features to Django ORM for working with data in bulk operations',
     long_description=README,
+    long_description_content_type="text/markdown",
     url='https://www.example.com/',
     author='Alan Illing',
     author_email='alanilling@protonmail.com',
