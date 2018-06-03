@@ -12,12 +12,12 @@ setup(
     version='0.1.0',
     packages=find_packages(),
     include_package_data=True,
-    license='BSD License',  # example license
+    license='Apache Software License',
     description='Adds missing features to Django ORM for working with data in bulk operations',
     long_description=README,
     url='https://www.example.com/',
     author='Alan Illing',
-    author_email='',
+    author_email='alanilling@protonmail.com',
     keywords = ['django', 'orm', 'database', 'bulk', 'data'],
     classifiers=[
         'Environment :: Web Environment',
