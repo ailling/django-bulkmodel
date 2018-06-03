@@ -20,6 +20,11 @@ setup(
     author='Alan Illing',
     author_email='alanilling@protonmail.com',
     keywords = ['django', 'orm', 'database', 'bulk', 'data'],
+
+    install_requires= [
+        'django>=1.9',
+    ],
+
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
