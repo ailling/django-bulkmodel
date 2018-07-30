@@ -50,7 +50,7 @@ class BulkModelManager(models.Manager):
                 new_instances.append(obj)
 
         if new_instances:
-            new_records = self.model.bulk_create(new_instances)
+            new_records = self.model.objects.bulk_create(new_instances)
             _ids.extend([i.id for i in new_records])
 
         qs = self.model.objects.filter(id__in = _ids)
