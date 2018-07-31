@@ -22,10 +22,13 @@ import collections
 class BulkModelQuerySet(models.QuerySet):
 
     def _get_n_concurrent_workers(self, n, default=30):
+        if not n:
+            return 0
+
         _max = getattr(settings, 'MAX_CONCURRENT_BATCH_WRITES', default)
 
-        if _max:
-            return max(n, _max)
+        if _max and n:
+            return max(int(_max), int(n))
 
         return n
 
