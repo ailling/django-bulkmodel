@@ -42,7 +42,7 @@ class BulkModelQuerySet(models.QuerySet):
         return self.filter(id__in = pks).update(_use_super=True, **kwargs)
 
 
-    def populate_values(self, objects, *fieldnames):
+    def populate_queryset_values(self, objects, *fieldnames):
         """
         Sets values on objects in the existing queryset from a given set of objects and optional set of fieldnames
 
@@ -138,6 +138,68 @@ class BulkModelQuerySet(models.QuerySet):
         return self.filter(id__in = pks).update(**cases)
 
 
+    def update_m2m_fields(self, fieldname, mapping):
+        """
+        Updates m2m relationship across several model instances.
+
+        The fieldname is the name of the m2m field on the model being updated
+        Mapping is a a dictionary keyed on PKs of the relationship's owning model,
+            valued on a list of PKs of the other model (i.e., the target of the m2m relationship)
+
+        :param str fieldname:
+        :param dict[int, list[int]] mapping:
+        :return:
+        """
+        _typemsg = "Mapping must be a dictionary, with keys valued on the primary keys of instances in the queryset, " \
+                   "valued on a list of primary keys of instances in the related object queryset"
+        if not isinstance(mapping, dict):
+            raise TypeError(_typemsg)
+
+        for _, value in mapping.items():
+            if not isinstance(value, list):
+                raise TypeError(_typemsg)
+
+        field = self.model._meta.get_field(fieldname)
+        if not isinstance(field, models.ManyToManyField):
+            raise TypeError('Field must be a many-to-many type')
+
+        field_instance = getattr(self.model, fieldname, None)
+        if not field_instance:
+            raise ValueError('Field not found')
+
+        ThroughModel = field_instance.through
+        through_model_fields = ThroughModel._meta.get_fields()
+
+        # align which field goes with which through model field
+
+        mapping_key_fieldname = ''
+        mapping_value_fieldname = ''
+
+        for f in through_model_fields:
+            if isinstance(f, models.ForeignKey) and f.target_field.model == self.model:
+                mapping_key_fieldname = f.attname
+
+            elif isinstance(f, models.ForeignKey):
+                mapping_value_fieldname = f.attname
+
+
+        # delete existing m2m relationships for the provided keys
+        key_ids = [i for i in mapping.keys()]
+        ThroughModel.objects.filter(**{
+            mapping_key_fieldname + '__in': key_ids
+        }).delete()
+
+        ls = []
+        for key, values in mapping.items():
+            for value in values:
+                ls.append(ThroughModel(**{
+                    mapping_key_fieldname: key,
+                    mapping_value_fieldname: value
+                }))
+
+        ThroughModel.objects.bulk_create(ls)
+
+
 
     def update_fields(self, *fieldnames, objects=None, batch_size=None, send_signal=True,
                       concurrent=False, max_concurrent_workers=None, return_queryset=False):
@@ -162,7 +224,7 @@ class BulkModelQuerySet(models.QuerySet):
             if not isinstance(objects, collections.Iterable):
                 raise TypeError('objects must be iterable')
 
-            self.populate_values(objects, *fieldnames)
+            self.populate_queryset_values(objects, *fieldnames)
 
         concurrent_write = self._get_concurrent(concurrent)
 
@@ -273,12 +335,15 @@ class BulkModelQuerySet(models.QuerySet):
 
         for fieldname in fieldnames:
             field = self.model._meta.get_field(fieldname)
+
+            # TODO: need to make sure this still works on primitive fields
+            attname = field.attname
             defaultvalue = field.get_default()
 
             # get the when conditions for this field
-            when_conditions = self._get_field_when_conditions(fieldname, id_list)
+            when_conditions = self._get_field_when_conditions(attname, id_list)
 
-            cases[fieldname] = Case(*when_conditions, default = Value(defaultvalue))
+            cases[attname] = Case(*when_conditions, default = Value(defaultvalue))
 
         return cases
 

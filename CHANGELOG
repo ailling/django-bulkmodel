@@ -1,0 +1,9 @@
+0.2.0:
+
+- Added support for related fields
+- Added support to bulk-update m2m relationships: update_m2m
+
+
+0.1.1:
+
+- Initial release

@@ -55,13 +55,14 @@ class BulkModelManager(models.Manager):
 
         qs = self.model.objects.filter(id__in = _ids)
 
-        if existing_instances:
-            qs = qs.update_fields(existing_instances, return_queryset=True)
+        # NOTE: this causes a bug
+        # if existing_instances:
+        #     qs = qs.update_fields(existing_instances, return_queryset=True)
 
         return qs
 
 
-    def populate_values(self, objects, *fieldnames):
+    def populate_queryset_values(self, objects, *fieldnames):
         """
         Sets values on objects in the existing queryset from a given set of objects and optional set of fieldnames
 
@@ -69,7 +70,7 @@ class BulkModelManager(models.Manager):
         :param List[str] fieldnames: a list of field names to apply updates to. If blank all fields will be updated
         :return:
         """
-        return self.get_queryset().populate_values(objects, *fieldnames)
+        return self.get_queryset().populate_queryset_values(objects, *fieldnames)
 
 
 
@@ -101,6 +102,21 @@ class BulkModelManager(models.Manager):
         dbconn.close()
 
         return self
+
+
+    def update_m2m_fields(self, fieldname, mapping):
+        """
+        Updates m2m relationship across several model instances.
+
+        The fieldname is the name of the m2m field on the model being updated
+        Mapping is a a dictionary keyed on PKs of the relationship's owning model,
+            valued on a list of PKs of the other model (i.e., the target of the m2m relationship)
+
+        :param str fieldname:
+        :param dict[int, list[int]] mapping:
+        :return:
+        """
+        return self.get_queryset().update_m2m_fields(fieldname, mapping)
 
 
     # region wrappers so that it's easier for IDEs to pick up these queryset methods
