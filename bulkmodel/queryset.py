@@ -17,6 +17,7 @@ from functools import partial
 from django.db import connections
 from io import StringIO
 import collections
+from collections import defaultdict
 
 
 class BulkModelQuerySet(models.QuerySet):
@@ -132,10 +133,18 @@ class BulkModelQuerySet(models.QuerySet):
         return n
 
 
-    def _cased_update_chunk(self, chunk, fields):
+    def _cased_update_chunk(self, chunk, fieldnames):
         pks = [i.pk for i in chunk]
-        cases = self._get_case_conditions(pks, fields)
-        return self.filter(id__in = pks).update(**cases)
+        cases = self._get_case_conditions(pks, fieldnames)
+
+        n_empty_array = 0
+
+        empty_array = self._get_empty_array_value_records(pks, fieldnames)
+        for fieldname, _ids in empty_array.items():
+            n_empty_array = self.filter(id__in = _ids).update(**{fieldname: []})
+
+        n_updated = self.filter(id__in = pks).update(**cases)
+        return max(n_updated, n_empty_array)
 
 
     def update_m2m_fields(self, fieldname, mapping):
@@ -307,8 +316,11 @@ class BulkModelQuerySet(models.QuerySet):
 
 
 
-    def _get_field_when_conditions(self, fieldname, id_list):
+    def _get_field_when_conditions(self, field, id_list):
+        fieldname = field.attname
         conditions = []
+
+        check_empty_object = type(field).__name__ == 'ArrayField'
 
         for record in self:
             if record.pk is None:
@@ -321,12 +333,34 @@ class BulkModelQuerySet(models.QuerySet):
             if val is None:
                 continue
 
+            if check_empty_object and not val:
+                continue
+
             conditions.append(When(
                 id = record.pk,
                 then = Value(val)
             ))
 
         return conditions
+
+
+    def _get_empty_array_value_records(self, id_list, fieldnames):
+        # keyed on the name of the field, valued on a set of ids for which to update to an empty list
+        empty = defaultdict(set)
+
+        for fieldname in fieldnames:
+            field = self.model._meta.get_field(fieldname)
+
+            if type(field).__name__ == 'ArrayField':
+                for record in self:
+                    if record.pk not in id_list:
+                        continue
+
+                    value = getattr(record, fieldname)
+                    if isinstance(value, list) and len(value) == 0:
+                        empty[fieldname].add(record.pk)
+
+        return empty
 
 
 
@@ -336,12 +370,15 @@ class BulkModelQuerySet(models.QuerySet):
         for fieldname in fieldnames:
             field = self.model._meta.get_field(fieldname)
 
-            # TODO: need to make sure this still works on primitive fields
+            if type(field).__name__ == 'JSONField':
+                # json fields aren't supported at the moment
+                continue
+
             attname = field.attname
             defaultvalue = field.get_default()
 
             # get the when conditions for this field
-            when_conditions = self._get_field_when_conditions(attname, id_list)
+            when_conditions = self._get_field_when_conditions(field, id_list)
 
             cases[attname] = Case(*when_conditions, default = Value(defaultvalue))
 
